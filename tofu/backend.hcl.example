@@ -1,0 +1,20 @@
+# Remote state for Linode Object Storage (S3-compatible).
+# Copy to backend.hcl and fill in your bucket/key/endpoint.
+
+bucket = "REPLACE_WITH_STATE_BUCKET"
+key    = "akamai-ai-dev-box/terraform.tfstate"
+region = "us-east-1"
+
+# Example endpoint for Frankfurt object storage cluster.
+# Replace with your bucket's actual cluster endpoint from:
+#   linode-cli object-storage endpoints
+endpoints = {
+  s3 = "https://eu-central-1.linodeobjects.com"
+}
+
+use_path_style              = true
+skip_region_validation      = true
+skip_credentials_validation = true
+skip_requesting_account_id  = true
+use_lockfile                = true
+encrypt                     = true

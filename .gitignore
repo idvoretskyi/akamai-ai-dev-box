@@ -3,6 +3,7 @@
 *.tfstate.*
 *.tfplan
 terraform.tfvars
+backend.hcl
 *.auto.tfvars
 *.tfvars.json
 override.tf

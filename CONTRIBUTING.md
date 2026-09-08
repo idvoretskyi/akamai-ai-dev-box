@@ -24,6 +24,8 @@ These are static checks. They must not need cloud credentials, provision resourc
 tofu -chdir=tofu init -lockfile=readonly
 ```
 
+For real deployments, this repo expects remote state in Linode Object Storage via `tofu/backend.hcl` (from `tofu/backend.hcl.example`) and local shell exports for credentials: `LINODE_TOKEN` from `scripts/linode-token-from-cli.sh` plus Object Storage S3 credentials.
+
 Do not run bootstrap scripts as root on your workstation. Server-side smoke checks require a separately approved deployment; report them separately from static results. Model quality and tool-use claims need reproducible runtime evidence, not just passing JSON validation.
 
 ## Change Expectations

@@ -1,4 +1,6 @@
 terraform {
+  backend "s3" {}
+
   required_version = ">= 1.9"
 
   required_providers {
@@ -6,8 +8,9 @@ terraform {
       source  = "linode/linode"
       version = "= 3.12.0"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.3"
+    }
   }
 }
-
-# Use LINODE_TOKEN on the administration host, never in cloud-init or Git.
-provider "linode" {}

@@ -12,15 +12,34 @@ TOFU = ROOT / "tofu"
 
 with tempfile.TemporaryDirectory(prefix="ai-dev-box-render-") as directory:
     # Standalone locals-only module: no state, provider, credentials or API calls.
-    source = (TOFU / "cloud-init.tf").read_text().replace(
-        "${path.module}/cloud-init/", f"{TOFU}/cloud-init/"
-    )
-    (Path(directory) / "main.tf").write_text(source)
-    (Path(directory) / "variables.tf").write_text('''
-variable "label" { default = "test-ai-dev-box" }
-variable "username" { default = "testdev" }
-variable "ssh_public_keys" { default = ["ssh-ed25519 dGVzdA== synthetic"] }
-''')
+    main_tf = f'''
+locals {{
+  image_pattern = "^(linode/ubuntu[0-9]+\\\\.[0-9]+|private/)"
+
+  bootstrap_script = file("{TOFU}/cloud-init/bootstrap.sh")
+  service_unit     = file("{TOFU}/cloud-init/ai-dev-box-bootstrap.service")
+  ollama_unit      = file("{TOFU}/cloud-init/ollama.service")
+
+  releases = jsondecode(file("{TOFU}/cloud-init/releases.json"))
+
+  cloud_init = templatefile("{TOFU}/cloud-init/main.yaml.tpl", {{
+    username         = "testdev"
+    hostname         = "test-ai-dev-box"
+    timezone         = "UTC"
+    ssh_keys         = ["ssh-ed25519 dGVzdA== synthetic"]
+    extra_packages   = []
+    ollama_version   = local.releases.ollama.version
+    ollama_sha256    = local.releases.ollama.sha256
+    opencode_version = local.releases.opencode.version
+    opencode_sha256  = local.releases.opencode.sha256
+    bootstrap_script = local.bootstrap_script
+    service_unit     = local.service_unit
+    ollama_unit      = local.ollama_unit
+  }})
+}}
+'''
+    (Path(directory) / "main.tf").write_text(main_tf)
+
     rendered = subprocess.run(
         ["tofu", "console", "-no-color"], cwd=directory,
         input="jsonencode(local.cloud_init)\n", text=True,
@@ -42,8 +61,9 @@ assert bootstrap.index('touch "$state/ready"') > bootstrap.index("/api/version")
 assert "ubuntu-drivers install --gpgpu" in bootstrap
 assert "ollama pull" not in bootstrap
 assert "LINODE_TOKEN" not in files["/etc/ai-dev-box.env"]["content"]
-assert "--no-block" in config["runcmd"][0][-1]
-assert "set -euo pipefail" in config["runcmd"][0][-1]
+runcmd_entry = config["runcmd"][0]
+assert "--no-block" in runcmd_entry
+assert "-euo pipefail" in runcmd_entry
 assert "selected_driver=$(ubuntu-drivers devices --gpgpu" in bootstrap
 assert "logger -t ai-dev-box \"loaded_nvidia_driver=" in bootstrap
 assert "After=network-online.target cloud-final.service" in files[

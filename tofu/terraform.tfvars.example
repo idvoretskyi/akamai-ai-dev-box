@@ -1,12 +1,59 @@
-# Fresh GPU VM only. No state or credentials are inherited from other projects.
-region   = "de-fra-2"
-label    = "ai-dev-box"
-username = "dev"
+# akamai-ai-dev-box - example variables
+# Copy to terraform.tfvars and customise.
+#
+# instance_type is pinned below so CLI defaults cannot select a non-GPU plan.
+# Other unset values are sourced automatically:
+#   - region / image from ~/.config/linode-cli (keys: region, image)
+#                 then built-in fallbacks: de-fra-2 / linode/ubuntu26.04
+#   - username from your local $USER at apply time
+# Only authorized_keys, root_pass, and allowed_ssh_cidrs_ipv4 are required here.
 
-ssh_public_keys = ["REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"]
-# Documentation address: replace with your actual public source IP before apply.
-ssh_allowed_ipv4 = ["203.0.113.10/32"]
-ssh_allowed_ipv6 = []
+###############################################################################
+# Required
+###############################################################################
 
-# Provide TF_VAR_root_password and LINODE_TOKEN via your secret manager or shell.
-# Do not commit secrets. A sensitive variable is still stored in state/plans.
+authorized_keys = [
+  # "ssh-ed25519 AAAAC3Nz... you@example.com",
+]
+
+# Required by Linode API. Not used for login (SSH key auth only).
+# Generate with: openssl rand -base64 32
+root_pass = "CHANGE_ME_TO_A_STRONG_PASSWORD_AT_LEAST_16_CHARS"
+
+# Restrict SSH to your own source IP/network.
+allowed_ssh_cidrs_ipv4 = ["203.0.113.10/32"]
+
+# RTX 4000 Ada Small baseline only.
+instance_type = "g2-gpu-rtx4000a1-s"
+
+###############################################################################
+# Optional - inherited from ~/.config/linode-cli / $USER when left unset
+###############################################################################
+
+# region   = "de-fra-2"
+# image    = "linode/ubuntu26.04"
+# username = "dev"
+
+###############################################################################
+# Instance basics
+###############################################################################
+
+# instance_label  = ""   # defaults to <username>-ai-dev-box
+# hostname        = ""   # defaults to instance_label
+# timezone        = "UTC"
+# tags            = ["dev", "ai-dev-box", "gpu", "ubuntu"]
+# private_ip      = false
+# backups_enabled = false
+
+###############################################################################
+# Firewall
+###############################################################################
+
+# create_firewall = true
+# allowed_ssh_cidrs_ipv6 = []
+
+###############################################################################
+# Cloud-init
+###############################################################################
+
+# extra_packages  = []
