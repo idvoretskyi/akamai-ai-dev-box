@@ -1,0 +1,15 @@
+[Unit]
+Description=AI dev box staged GPU bootstrap
+Wants=network-online.target
+After=network-online.target cloud-final.service
+ConditionPathExists=/var/lib/cloud/instance/boot-finished
+ConditionPathExists=!/var/lib/ai-dev-box/ready
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ai-dev-box-bootstrap
+TimeoutStartSec=3600
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

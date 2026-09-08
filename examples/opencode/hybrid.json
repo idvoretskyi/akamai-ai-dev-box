@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "enabled_providers": ["ollama", "github-copilot"],
+  "model": "ollama/dev-coder",
+  "small_model": "ollama/dev-coder",
+  "share": "disabled",
+  "autoupdate": false,
+  "permission": {
+    "edit": "ask",
+    "bash": "ask"
+  },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (localhost)",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "dev-coder": {
+          "name": "dev-coder (local reference)",
+          "tool_call": true,
+          "limit": {
+            "context": 16384,
+            "output": 4096
+          }
+        }
+      }
+    }
+  }
+}

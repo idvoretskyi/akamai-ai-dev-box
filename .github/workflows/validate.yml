@@ -1,0 +1,36 @@
+name: Validate
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version: 1.12.1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install static check dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          python -m pip install -r requirements-dev.txt
+      - name: OpenTofu formatting
+        run: tofu -chdir=tofu fmt -check -recursive -diff
+      - name: OpenTofu init and validate (no backend)
+        run: |
+          tofu -chdir=tofu init -backend=false -lockfile=readonly
+          tofu -chdir=tofu validate
+      - name: Shell static checks
+        run: |
+          bash -n tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+          shellcheck tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+      - name: Render and schema checks
+        run: python tests/check_config.py

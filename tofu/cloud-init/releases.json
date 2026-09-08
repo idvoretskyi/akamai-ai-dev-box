@@ -1,0 +1,10 @@
+{
+  "ollama": {
+    "version": "0.33.3",
+    "sha256": "c13cea8f3389db4145f8a6cb88d1747242a48639d7c13e3bda7c1ebdc6eebb2f"
+  },
+  "opencode": {
+    "version": "1.18.29",
+    "sha256": "ea800b7ff56226b70952126c9fc1e2517ca4c4b5682fd9d3f9e87449697a1194"
+  }
+}

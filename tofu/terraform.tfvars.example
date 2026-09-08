@@ -1,0 +1,12 @@
+# Fresh GPU VM only. No state or credentials are inherited from other projects.
+region   = "de-fra-2"
+label    = "ai-dev-box"
+username = "dev"
+
+ssh_public_keys = ["REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"]
+# Documentation address: replace with your actual public source IP before apply.
+ssh_allowed_ipv4 = ["203.0.113.10/32"]
+ssh_allowed_ipv6 = []
+
+# Provide TF_VAR_root_password and LINODE_TOKEN via your secret manager or shell.
+# Do not commit secrets. A sensitive variable is still stored in state/plans.
