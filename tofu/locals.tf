@@ -10,7 +10,7 @@ locals {
   instance_type = coalesce(var.instance_type, try(local.cli.type, ""), "g2-gpu-rtx4000a1-s")
   image         = coalesce(var.image, try(local.cli.image, ""), "linode/ubuntu26.04")
 
-  image_pattern = "^(linode/ubuntu[0-9]+\\.[0-9]+|private/)"
+  image_pattern = "^linode/ubuntu26\\.04$"
 
   username = coalesce(var.username, data.external.local_user.result.username)
   instance = coalesce(var.instance_label, "${local.username}-ai-dev-box")
@@ -37,7 +37,7 @@ locals {
     ollama_unit      = local.ollama_unit
   })
 
-  ipv4    = length(linode_instance.dev_box.ipv4) > 0 ? tolist(linode_instance.dev_box.ipv4)[0] : ""
+  ipv4    = try(linode_instance.dev_box.ip_address, "")
   have_ip = local.ipv4 != ""
 
   ssh_config_lines = [

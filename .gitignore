@@ -3,6 +3,8 @@
 *.tfstate.*
 *.tfplan
 terraform.tfvars
+*.tfvars
+!tofu/terraform.tfvars.example
 backend.hcl
 *.auto.tfvars
 *.tfvars.json

@@ -64,7 +64,7 @@ assert "LINODE_TOKEN" not in files["/etc/ai-dev-box.env"]["content"]
 runcmd_entry = config["runcmd"][0]
 assert "--no-block" in runcmd_entry
 assert "-euo pipefail" in runcmd_entry
-assert "selected_driver=$(ubuntu-drivers devices --gpgpu" in bootstrap
+assert "selected_driver=$(ubuntu-drivers list --gpgpu --recommended" in bootstrap
 assert "logger -t ai-dev-box \"loaded_nvidia_driver=" in bootstrap
 assert "After=network-online.target cloud-final.service" in files[
     "/etc/systemd/system/ai-dev-box-bootstrap.service"

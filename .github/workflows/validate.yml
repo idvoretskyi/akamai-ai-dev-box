@@ -2,6 +2,7 @@ name: Validate
 on:
   push:
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -30,7 +31,15 @@ jobs:
           tofu -chdir=tofu validate
       - name: Shell static checks
         run: |
-          bash -n tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
-          shellcheck tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+          bash -n scripts/linode-token-from-cli.sh
+          bash -n scripts/smoke-test.sh
+          bash -n tofu/cloud-init/bootstrap.sh
+          bash -n tofu/scripts/read-linode-cli.sh
+          bash -n tofu/scripts/read-local-user.sh
+          shellcheck scripts/linode-token-from-cli.sh
+          shellcheck scripts/smoke-test.sh
+          shellcheck tofu/cloud-init/bootstrap.sh
+          shellcheck tofu/scripts/read-linode-cli.sh
+          shellcheck tofu/scripts/read-local-user.sh
       - name: Render and schema checks
         run: python tests/check_config.py

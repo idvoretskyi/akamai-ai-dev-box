@@ -1,10 +1,10 @@
 #cloud-config
 
-hostname: ${hostname}
-fqdn: ${hostname}
+hostname: ${jsonencode(hostname)}
+fqdn: ${jsonencode(hostname)}
 preserve_hostname: false
 manage_etc_hosts: true
-timezone: ${timezone}
+timezone: ${jsonencode(timezone)}
 locale: en_US.UTF-8
 
 package_update: true
@@ -31,11 +31,11 @@ packages:
   - pciutils
   - ubuntu-drivers-common
 %{ for p in extra_packages ~}
-  - ${p}
+  - ${jsonencode(p)}
 %{ endfor ~}
 
 users:
-  - name: ${username}
+  - name: ${jsonencode(username)}
     groups:
       - sudo
     sudo: ALL=(ALL) NOPASSWD:ALL

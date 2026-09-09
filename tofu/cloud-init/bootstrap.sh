@@ -40,22 +40,20 @@ fi
 if [[ ! -f "$state/driver-boot-id" ]]; then
   apt-get update
   apt-get install -y "linux-headers-$(uname -r)" ubuntu-drivers-common
-  selected_driver=$(ubuntu-drivers devices --gpgpu | awk '/recommended/ { for (i = 1; i <= NF; i++) if ($i ~ /^nvidia-driver-[0-9]+(-server)?(-open)?$/) { print $i; exit } }')
-  if [[ -z $selected_driver ]]; then
-    selected_driver=$(ubuntu-drivers list --gpgpu | awk '/^nvidia-driver-[0-9]+(-server)?(-open)?$/ { print; exit }')
-  fi
+  selected_driver=$(ubuntu-drivers list --gpgpu --recommended | awk '/^nvidia-driver-[0-9]+(-server)?(-open)?([[:space:]].*)?$/ { print $1; exit }')
+  [[ -n $selected_driver ]] || {
+    echo "Unable to identify a recommended NVIDIA driver package." >&2
+    exit 1
+  }
   ubuntu-drivers install --gpgpu
   # Ensure userspace utilities match the selected driver family when available.
-  if [[ -n $selected_driver ]]; then
-    selected_driver=${selected_driver%-open}
-    utils_package=${selected_driver/nvidia-driver-/nvidia-utils-}
-    if apt-cache show "$utils_package" >/dev/null 2>&1; then
-      apt-get install -y "$utils_package"
-    else
-      echo "Skipping explicit utility package install: $utils_package not available." >&2
-    fi
+  selected_driver=${selected_driver%-open}
+  utils_package=${selected_driver/nvidia-driver-/nvidia-utils-}
+  if apt-cache show "$utils_package" >/dev/null 2>&1; then
+    apt-get install -y "$utils_package"
   else
-    echo "Unable to identify the recommended NVIDIA driver package; continuing with installed compute stack." >&2
+    echo "Expected utility package is unavailable: $utils_package" >&2
+    exit 1
   fi
   update-initramfs -u
   printf '%s\n' "$boot_id" > "$state/driver-boot-id"
@@ -106,7 +104,7 @@ done
 systemctl daemon-reload
 systemctl enable --now ollama
 for ((attempt = 1; attempt <= 30; attempt++)); do
-  if curl --fail --silent http://127.0.0.1:11434/api/version; then
+  if curl --fail --silent --show-error --max-time 10 http://127.0.0.1:11434/api/version >/dev/null; then
     /usr/local/bin/opencode --version
     touch "$state/ready"
     echo "GPU and inference service ready. No model has been downloaded."

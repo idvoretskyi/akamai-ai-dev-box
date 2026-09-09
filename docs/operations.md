@@ -8,7 +8,7 @@ The budget baseline is $0.52/hour, or $379.60 at 730 hours, with **no monthly ca
 
 ## Inputs
 
-Run OpenTofu >= 1.9 on an external trusted administration host, not on the instance it manages. Use Linode provider `3.12.0` and the committed dependency lock file. Set provider auth from the local `linode-cli` configuration via `eval "$(scripts/linode-token-from-cli.sh)"`, which exports `LINODE_TOKEN` without writing it to source or cloud-init data.
+Run OpenTofu >= 1.10 on an external trusted administration host, not on the instance it manages. Use Linode provider `3.12.0` and the committed dependency lock file. Set provider auth from local `linode-cli` configuration via `export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"`.
 
 | Variable | Requirement or default |
 | --- | --- |
@@ -18,7 +18,7 @@ Run OpenTofu >= 1.9 on an external trusted administration host, not on the insta
 | `instance_type` | `g2-gpu-rtx4000a1-s` (required baseline) |
 | `authorized_keys` | Required list of your SSH public keys, never private keys |
 | `allowed_ssh_cidrs_ipv4` | Required list of actual trusted source CIDRs |
-| `allowed_ssh_cidrs_ipv6` | `::/0`; set `[]` if IPv6 SSH is not needed |
+| `allowed_ssh_cidrs_ipv6` | `[]`; no IPv6 SSH sources by default |
 | `root_pass` | Required sensitive value; provision out of band, never commit |
 
 The following is illustrative input, **not deployable as written**. Replace placeholders privately; obtain the root password through a secure input mechanism rather than committing it in tfvars:
@@ -33,7 +33,7 @@ allowed_ssh_cidrs_ipv4  = ["203.0.113.10/32"]
 allowed_ssh_cidrs_ipv6  = []
 ```
 
-`203.0.113.10/32` belongs to a documentation range. It will not grant your workstation access. Use the actual stable public source address or trusted network CIDR, not `0.0.0.0/0` or `::/0`. A required provisioning root password does not imply that SSH password login should be enabled.
+`203.0.113.10/32` belongs to a documentation range. It will not grant your workstation access. Use the actual stable public source address or trusted network CIDR, not broad allowlists like `0.0.0.0/0` or `::/0`. A required provisioning root password does not imply that SSH password login should be enabled.
 
 Keep real variable files, state, and plans out of Git. Marking a variable `sensitive` suppresses some display but does not encrypt it. Use restricted permissions and encryption for local storage, remote state, and backups, even when the repository or storage is private. See [state security](security.md#credentials-and-state).
 
@@ -43,13 +43,15 @@ Use a dedicated private Linode Object Storage bucket and configure the OpenTofu 
 
 Export Object Storage S3 credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in your shell before `tofu init`. These are not the Linode API token and are used only for state storage access.
 
-Initialize or migrate on the first machine:
+Initialize backend state on the first machine:
 
 ```bash
 cp tofu/backend.hcl.example tofu/backend.hcl
 $EDITOR tofu/backend.hcl
 tofu -chdir=tofu init -reconfigure -backend-config=backend.hcl -lockfile=readonly
 ```
+
+If migrating an existing backend, use `tofu -chdir=tofu init -migrate-state -backend-config=backend.hcl -lockfile=readonly` after separate review.
 
 On additional machines, use the same backend settings and the same deployment inputs so all operators target the same resources and state.
 
@@ -60,7 +62,7 @@ Before first production use, verify backend locking behavior in your account and
 **Do not deploy during repository development or CI.** These commands are a future operator workflow, not authorization to incur charges. Verify the target account, credentials, SSH sources, current price, and intended new resources first. From the repository root on the trusted administration host:
 
 ```bash
-eval "$(scripts/linode-token-from-cli.sh)"
+export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"
 tofu -chdir=tofu init -reconfigure -backend-config=backend.hcl -lockfile=readonly
 tofu -chdir=tofu validate
 tofu -chdir=tofu plan -out=create.tfplan
