@@ -32,8 +32,16 @@ Run static verification with direct commands:
 tofu -chdir=tofu fmt -check -recursive -diff
 tofu -chdir=tofu init -backend=false -lockfile=readonly
 tofu -chdir=tofu validate
-bash -n tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
-shellcheck tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+bash -n scripts/linode-token-from-cli.sh
+bash -n scripts/smoke-test.sh
+bash -n tofu/cloud-init/bootstrap.sh
+bash -n tofu/scripts/read-linode-cli.sh
+bash -n tofu/scripts/read-local-user.sh
+shellcheck scripts/linode-token-from-cli.sh
+shellcheck scripts/smoke-test.sh
+shellcheck tofu/cloud-init/bootstrap.sh
+shellcheck tofu/scripts/read-linode-cli.sh
+shellcheck tofu/scripts/read-local-user.sh
 python tests/check_config.py
 ```
 

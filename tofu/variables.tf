@@ -33,20 +33,20 @@ variable "instance_label" {
   nullable    = true
 
   validation {
-    condition     = var.instance_label == null || can(regex("^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$", var.instance_label))
-    error_message = "Instance label must start with a letter or digit and contain only letters, digits, hyphens, or underscores (max 64 chars)."
+    condition     = var.instance_label == null || can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", var.instance_label))
+    error_message = "Instance label must be a lowercase DNS label (letters, digits, hyphens, 1-63 chars)."
   }
 }
 
 variable "image" {
-  description = "Akamai image slug. Optional - inherits from ~/.config/linode-cli, then falls back to linode/ubuntu26.04. Supported: any linode/ubuntu<NN>.<NN> slug or private/ image."
+  description = "Akamai image slug. Optional - inherits from ~/.config/linode-cli, then falls back to linode/ubuntu26.04. This baseline supports linode/ubuntu26.04 only."
   type        = string
   default     = null
   nullable    = true
 
   validation {
-    condition     = var.image == null || can(regex("^(linode/ubuntu[0-9]+\\.[0-9]+|private/)", var.image))
-    error_message = "Image must be an Ubuntu image slug (e.g. linode/ubuntu26.04) or a private/ image slug."
+    condition     = var.image == null || var.image == "linode/ubuntu26.04"
+    error_message = "This baseline supports image linode/ubuntu26.04 only."
   }
 }
 
@@ -112,8 +112,8 @@ variable "authorized_keys" {
   default     = []
 
   validation {
-    condition     = alltrue([for key in var.authorized_keys : can(regex("^(ssh-(rsa|ed25519|dss)|ecdsa-sha2-nistp(256|384|521)) ", key))])
-    error_message = "Each authorized key must be a valid SSH public key (ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp*)."
+    condition     = length(var.authorized_keys) > 0 && alltrue([for key in var.authorized_keys : can(regex("^(ssh-(rsa|ed25519|dss)|ecdsa-sha2-nistp(256|384|521)) ", key))])
+    error_message = "Provide at least one valid SSH public key (ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-nistp*)."
   }
 }
 
@@ -123,8 +123,8 @@ variable "root_pass" {
   sensitive   = true
 
   validation {
-    condition     = length(var.root_pass) >= 16
-    error_message = "Root password must be at least 16 characters long."
+    condition     = length(var.root_pass) >= 16 && var.root_pass != "CHANGE_ME_TO_A_STRONG_PASSWORD_AT_LEAST_16_CHARS"
+    error_message = "Root password must be at least 16 characters long and cannot use the published placeholder value."
   }
 }
 
@@ -141,22 +141,22 @@ variable "create_firewall" {
 variable "allowed_ssh_cidrs_ipv4" {
   description = "IPv4 CIDRs allowed to access SSH (port 22). Restrict to your own IP for production use."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 
   validation {
-    condition     = alltrue([for cidr in var.allowed_ssh_cidrs_ipv4 : can(cidrhost(cidr, 0))])
-    error_message = "Each entry must be a valid IPv4 CIDR (e.g. 203.0.113.10/32)."
+    condition     = (!var.create_firewall) || (length(var.allowed_ssh_cidrs_ipv4) > 0 && alltrue([for cidr in var.allowed_ssh_cidrs_ipv4 : can(cidrhost(cidr, 0)) && !strcontains(cidr, ":") && !can(regex("/0$", cidr))]))
+    error_message = "When create_firewall is true, provide one or more IPv4 CIDRs narrower than /0 (for example 203.0.113.10/32)."
   }
 }
 
 variable "allowed_ssh_cidrs_ipv6" {
   description = "IPv6 CIDRs allowed to access SSH (port 22)."
   type        = list(string)
-  default     = ["::/0"]
+  default     = []
 
   validation {
-    condition     = alltrue([for cidr in var.allowed_ssh_cidrs_ipv6 : can(cidrhost(cidr, 0))])
-    error_message = "Each entry must be a valid IPv6 CIDR."
+    condition     = alltrue([for cidr in var.allowed_ssh_cidrs_ipv6 : can(cidrhost(cidr, 0)) && strcontains(cidr, ":") && !can(regex("/0$", cidr))])
+    error_message = "Each IPv6 entry must be a valid CIDR narrower than /0."
   }
 }
 

@@ -29,7 +29,7 @@ output "region" {
 
 output "image" {
   description = "Resolved image slug."
-  value       = linode_instance.dev_box.image
+  value       = local.image
 }
 
 ###############################################################################
@@ -57,12 +57,12 @@ output "private_ip_address" {
 
 output "firewall_id" {
   description = "Firewall ID (null when create_firewall is false)."
-  value       = one(linode_firewall.dev_box_fw[*].id)
+  value       = var.create_firewall ? linode_firewall.dev_box_fw[0].id : null
 }
 
 output "firewall_status" {
   description = "Firewall status (null when create_firewall is false)."
-  value       = one(linode_firewall.dev_box_fw[*].status)
+  value       = var.create_firewall ? linode_firewall.dev_box_fw[0].status : null
 }
 
 ###############################################################################
@@ -70,8 +70,8 @@ output "firewall_status" {
 ###############################################################################
 
 output "ssh_command" {
-  description = "SSH as root."
-  value       = local.have_ip ? "ssh root@${local.ipv4}" : null
+  description = "SSH as the non-root user."
+  value       = local.have_ip ? "ssh ${local.username}@${local.ipv4}" : null
 }
 
 output "ssh_command_user" {
@@ -86,7 +86,7 @@ output "first_boot_log_command" {
 
 output "wait_ready_command" {
   description = "Poll until staged bootstrap finishes (or fails). Exits 0 on success, 1 on failure."
-  value       = local.have_ip ? "until ssh -o StrictHostKeyChecking=accept-new ${local.username}@${local.ipv4} 'test -f /var/lib/ai-dev-box/ready' 2>/dev/null; do echo waiting...; sleep 15; done; ssh ${local.username}@${local.ipv4} 'sudo test -f /var/lib/ai-dev-box/ready && echo ready'" : null
+  value       = local.have_ip ? "for _ in $(seq 1 240); do if ssh -o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o StrictHostKeyChecking=accept-new ${local.username}@${local.ipv4} 'sudo -n test -f /var/lib/ai-dev-box/ready'; then echo ready; exit 0; fi; if ssh -o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o StrictHostKeyChecking=accept-new ${local.username}@${local.ipv4} 'sudo -n systemctl is-failed --quiet ai-dev-box-bootstrap.service'; then echo FAILED - bootstrap service is failed; exit 1; fi; echo waiting...; sleep 15; done; echo FAILED - timeout waiting for /var/lib/ai-dev-box/ready; exit 1" : null
 }
 
 ###############################################################################

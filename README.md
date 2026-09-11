@@ -15,12 +15,12 @@ State is intended to live in a remote Linode Object Storage bucket so the same d
 ## Fresh deployment
 
 ```sh
-eval "$(scripts/linode-token-from-cli.sh)"
+export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"
 cp tofu/terraform.tfvars.example tofu/terraform.tfvars
-$EDITOR tofu/backend.hcl.example    # copy values into tofu/backend.hcl
+cp tofu/backend.hcl.example tofu/backend.hcl
+$EDITOR tofu/backend.hcl
 $EDITOR tofu/terraform.tfvars   # set authorized_keys + root_pass + allowed_ssh_cidrs_ipv4
 
-cp tofu/backend.hcl.example tofu/backend.hcl
 tofu -chdir=tofu init -reconfigure -backend-config=backend.hcl -lockfile=readonly
 tofu -chdir=tofu plan -out=create.tfplan
 # Review resources, region, plan, and firewall rules before apply.
@@ -40,8 +40,8 @@ Key variables (`tofu/variables.tf`):
 |---|---|---|
 | `region` / `instance_type` / `image` | from `~/.config/linode-cli` | fallback: `de-fra-2` / `g2-gpu-rtx4000a1-s` / `linode/ubuntu26.04` |
 | `authorized_keys`, `root_pass` | none | required |
-| `allowed_ssh_cidrs_ipv4` | `0.0.0.0/0` | set to your real source CIDR(s) before deployment |
-| `allowed_ssh_cidrs_ipv6` | `::/0` | set `[]` if not needed |
+| `allowed_ssh_cidrs_ipv4` | none | required; set your real source CIDR(s) |
+| `allowed_ssh_cidrs_ipv6` | `[]` | optional; no IPv6 SSH allowlist by default |
 | `backups_enabled` | `false` | paid backups not included in baseline |
 
 The config enforces `g2-gpu-rtx4000a1-s` as the supported baseline plan.
@@ -53,6 +53,7 @@ The config enforces `g2-gpu-rtx4000a1-s` as the supported baseline plan.
 - Export Object Storage S3 credentials (for example `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) in your shell before `tofu init`.
 - Keep `use_lockfile = true` and enable bucket versioning to reduce shared-state corruption risk.
 - Validate backend locking once in your environment before collaborative use.
+- Use `tofu init -migrate-state` for backend moves; do not use `-reconfigure` for state migration.
 
 ## OpenCode examples
 
@@ -79,8 +80,16 @@ python -m pip install -r requirements-dev.txt
 tofu -chdir=tofu fmt -check -recursive -diff
 tofu -chdir=tofu init -backend=false -lockfile=readonly
 tofu -chdir=tofu validate
-bash -n tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
-shellcheck tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+bash -n scripts/linode-token-from-cli.sh
+bash -n scripts/smoke-test.sh
+bash -n tofu/cloud-init/bootstrap.sh
+bash -n tofu/scripts/read-linode-cli.sh
+bash -n tofu/scripts/read-local-user.sh
+shellcheck scripts/linode-token-from-cli.sh
+shellcheck scripts/smoke-test.sh
+shellcheck tofu/cloud-init/bootstrap.sh
+shellcheck tofu/scripts/read-linode-cli.sh
+shellcheck tofu/scripts/read-local-user.sh
 python tests/check_config.py
 ```
 

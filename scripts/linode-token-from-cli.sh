@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Emit a shell export for LINODE_TOKEN from local linode-cli configuration.
+# Emit a LINODE_TOKEN value from local linode-cli configuration.
 # Usage:
-#   eval "$(scripts/linode-token-from-cli.sh)"
-#   eval "$(scripts/linode-token-from-cli.sh profile-name)"
+#   export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"
+#   export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh profile-name)"
 
 set -euo pipefail
 
 python3 - "$@" <<'PY'
 import configparser
 import os
-import shlex
 import sys
 from pathlib import Path
 
@@ -26,7 +25,9 @@ profile = sys.argv[1] if len(sys.argv) == 2 else None
 
 env_token = os.environ.get("LINODE_CLI_TOKEN", "")
 if env_token:
-    print(f"export LINODE_TOKEN={shlex.quote(env_token)}")
+    if profile:
+        fail("LINODE_CLI_TOKEN is set; unset it before selecting a saved profile")
+    print(env_token)
     raise SystemExit(0)
 
 cfg_override = os.environ.get("LINODE_CLI_CONFIG", "")
@@ -38,21 +39,24 @@ else:
     cfg_path = legacy if legacy.is_file() else xdg_home / "linode-cli"
 
 if not cfg_path.is_file():
-    fail(f"linode-cli config not found at {cfg_path}")
+    fail("linode-cli config not found; set LINODE_CLI_CONFIG or run linode-cli configure")
 
 parser = configparser.ConfigParser()
-parser.read(cfg_path)
+try:
+    parser.read(cfg_path)
+except (configparser.Error, OSError):
+    fail("unable to read linode-cli config")
 
 selected = profile or parser.get("DEFAULT", "default-user", fallback="")
 if not selected:
     fail("no linode-cli profile selected and DEFAULT.default-user is missing")
 
 if selected != "DEFAULT" and not parser.has_section(selected):
-    fail(f"linode-cli profile '{selected}' not found in {cfg_path}")
+    fail("selected linode-cli profile was not found")
 
 token = parser.get(selected, "token", fallback="").strip()
 if not token:
-    fail(f"token not found for linode-cli profile '{selected}'")
+    fail("token not found for selected linode-cli profile")
 
-print(f"export LINODE_TOKEN={shlex.quote(token)}")
+print(token)
 PY

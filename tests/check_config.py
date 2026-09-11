@@ -43,7 +43,7 @@ locals {{
     rendered = subprocess.run(
         ["tofu", "console", "-no-color"], cwd=directory,
         input="jsonencode(local.cloud_init)\n", text=True,
-        capture_output=True, check=True,
+        capture_output=True, check=True, timeout=60,
     )
     config = yaml.safe_load(json.loads(json.loads(rendered.stdout)))
 
@@ -53,7 +53,7 @@ assert "default" not in config["users"]
 assert config["users"][0]["groups"] == ["sudo"]
 files = {entry["path"]: entry for entry in config["write_files"]}
 bootstrap = files["/usr/local/sbin/ai-dev-box-bootstrap"]["content"]
-subprocess.run(["bash", "-n"], input=bootstrap, text=True, check=True)
+subprocess.run(["bash", "-n"], input=bootstrap, text=True, check=True, timeout=10)
 for marker in ("kernel-boot-id", "driver-boot-id"):
     assert f'$(cat "$state/{marker}") == "$boot_id"' in bootstrap
 assert bootstrap.index("modprobe nvidia_uvm") < bootstrap.index("systemctl enable --now ollama")
@@ -64,7 +64,7 @@ assert "LINODE_TOKEN" not in files["/etc/ai-dev-box.env"]["content"]
 runcmd_entry = config["runcmd"][0]
 assert "--no-block" in runcmd_entry
 assert "-euo pipefail" in runcmd_entry
-assert "selected_driver=$(ubuntu-drivers devices --gpgpu" in bootstrap
+assert "selected_driver=$(ubuntu-drivers list --gpgpu --recommended" in bootstrap
 assert "logger -t ai-dev-box \"loaded_nvidia_driver=" in bootstrap
 assert "After=network-online.target cloud-final.service" in files[
     "/etc/systemd/system/ai-dev-box-bootstrap.service"

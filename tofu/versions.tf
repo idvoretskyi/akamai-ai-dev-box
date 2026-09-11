@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {}
 
-  required_version = ">= 1.9"
+  required_version = ">= 1.10"
 
   required_providers {
     linode = {

@@ -4,7 +4,7 @@ Small, focused improvements are welcome. Open an issue before proposing a new in
 
 ## Local Checks
 
-Use OpenTofu >= 1.9 and the repository's pinned Linode provider lock file. Install Python 3 with venv support and ShellCheck. From the repository root:
+Use OpenTofu >= 1.10 and the repository's pinned Linode provider lock file. Install Python 3 with venv support and ShellCheck. From the repository root:
 
 ```bash
 python3 -m venv .venv
@@ -13,8 +13,16 @@ python -m pip install -r requirements-dev.txt
 tofu -chdir=tofu fmt -check -recursive -diff
 tofu -chdir=tofu init -backend=false -lockfile=readonly
 tofu -chdir=tofu validate
-bash -n tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
-shellcheck tofu/cloud-init/bootstrap.sh scripts/smoke-test.sh
+bash -n scripts/linode-token-from-cli.sh
+bash -n scripts/smoke-test.sh
+bash -n tofu/cloud-init/bootstrap.sh
+bash -n tofu/scripts/read-linode-cli.sh
+bash -n tofu/scripts/read-local-user.sh
+shellcheck scripts/linode-token-from-cli.sh
+shellcheck scripts/smoke-test.sh
+shellcheck tofu/cloud-init/bootstrap.sh
+shellcheck tofu/scripts/read-linode-cli.sh
+shellcheck tofu/scripts/read-local-user.sh
 python tests/check_config.py
 ```
 

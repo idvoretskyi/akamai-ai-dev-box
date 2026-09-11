@@ -31,7 +31,7 @@ instance_type = "g2-gpu-rtx4000a1-s"
 ###############################################################################
 
 # region   = "de-fra-2"
-# image    = "linode/ubuntu26.04"
+# image    = "linode/ubuntu26.04" # only supported image in this baseline
 # username = "dev"
 
 ###############################################################################

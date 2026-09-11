@@ -19,7 +19,7 @@ The host needs outbound access for package and binary installation, explicit mod
 ## Credentials And State
 
 - No workstation SSH private keys, GitHub credentials, Copilot tokens, cloud credentials, or user OpenCode configuration are copied by bootstrap.
-- Keep OpenTofu and provider credentials on an external trusted administration host. Use `scripts/linode-token-from-cli.sh` to export `LINODE_TOKEN` from local `linode-cli` config only in the active shell, and do not place that token on the GPU host.
+- Keep OpenTofu and provider credentials on an external trusted administration host. Use `export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"` in the active shell, and do not place that token on the GPU host.
 - Remote state in Linode Object Storage uses separate S3 credentials (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`). Scope and rotate them independently from the Linode API token.
 - The required `root_pass` is sensitive but can still be stored in state and saved plans. Treat state, plans, real tfvars, cloud-init data, crash logs, and backups as confidential.
 - Encryption and access control are required for sensitive storage even if the repository or state bucket is private. OpenTofu `sensitive` and `.gitignore` are not encryption or access controls.

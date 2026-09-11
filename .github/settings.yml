@@ -1,0 +1,68 @@
+repository:
+  name: akamai-ai-dev-box
+  description: OpenTofu GPU dev box baseline on Akamai Cloud with staged NVIDIA bootstrap and local Ollama.
+  homepage: ""
+  topics: opentofu, akamai, linode, gpu, ollama, opencode, cloud-init
+  private: false
+  has_issues: true
+  has_projects: true
+  has_wiki: false
+  has_downloads: false
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+  delete_branch_on_merge: true
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+# Requires the Settings app to be installed with permissions to manage
+# repository security and branch protection.
+
+labels:
+  - name: bug
+    color: d73a4a
+    description: Something is broken and needs a fix
+  - name: documentation
+    color: 0075ca
+    description: Improvements or additions to docs
+  - name: enhancement
+    color: a2eeef
+    description: New feature or capability
+  - name: dependencies
+    color: 0366d6
+    description: Dependency updates and related fixes
+  - name: github-actions
+    color: 1d76db
+    description: GitHub Actions workflow changes
+  - name: terraform
+    color: 623ce4
+    description: OpenTofu or provider configuration changes
+  - name: python
+    color: 3572a5
+    description: Python script or test updates
+  - name: security
+    color: b60205
+    description: Security hardening or vulnerability fixes
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+        dismissal_restrictions: {}
+      required_status_checks:
+        strict: true
+        contexts:
+          - static
+          - Analyze (actions)
+          - Analyze (python)
+          - CodeQL
+          - Filesystem Scan
+          - dependency-review
+          - DCO
+      enforce_admins: true
+      required_linear_history: false
+      restrictions: null
