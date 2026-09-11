@@ -57,6 +57,12 @@ branches:
         strict: true
         contexts:
           - static
+          - Analyze (actions)
+          - Analyze (python)
+          - CodeQL
+          - Filesystem Scan
+          - dependency-review
+          - DCO
       enforce_admins: true
       required_linear_history: false
       restrictions: null
