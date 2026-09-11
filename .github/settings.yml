@@ -59,7 +59,6 @@ branches:
           - static
           - Analyze (actions)
           - Analyze (python)
-          - CodeQL
           - Filesystem Scan
           - dependency-review
           - DCO

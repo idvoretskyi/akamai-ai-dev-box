@@ -66,15 +66,10 @@ output "firewall_status" {
 }
 
 ###############################################################################
-# Operational helpers (eval the -raw output to run them)
+# Operational helpers (pass the -raw output to bash -lc "$(...)" to run them)
 ###############################################################################
 
 output "ssh_command" {
-  description = "SSH as the non-root user."
-  value       = local.have_ip ? "ssh ${local.username}@${local.ipv4}" : null
-}
-
-output "ssh_command_user" {
   description = "SSH as the non-root user."
   value       = local.have_ip ? "ssh ${local.username}@${local.ipv4}" : null
 }
@@ -86,7 +81,7 @@ output "first_boot_log_command" {
 
 output "wait_ready_command" {
   description = "Poll until staged bootstrap finishes (or fails). Exits 0 on success, 1 on failure."
-  value       = local.have_ip ? "for _ in $(seq 1 240); do if ssh -o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o StrictHostKeyChecking=accept-new ${local.username}@${local.ipv4} 'sudo -n test -f /var/lib/ai-dev-box/ready'; then echo ready; exit 0; fi; if ssh -o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o StrictHostKeyChecking=accept-new ${local.username}@${local.ipv4} 'sudo -n systemctl is-failed --quiet ai-dev-box-bootstrap.service'; then echo FAILED - bootstrap service is failed; exit 1; fi; echo waiting...; sleep 15; done; echo FAILED - timeout waiting for /var/lib/ai-dev-box/ready; exit 1" : null
+  value       = local.have_ip ? "for _ in $(seq 1 240); do if ssh ${local.ssh_batch_opts} ${local.username}@${local.ipv4} 'sudo -n test -f /var/lib/ai-dev-box/ready'; then echo ready; exit 0; fi; if ssh ${local.ssh_batch_opts} ${local.username}@${local.ipv4} 'sudo -n systemctl is-failed --quiet ai-dev-box-bootstrap.service'; then echo FAILED - bootstrap service is failed; exit 1; fi; echo waiting...; sleep 15; done; echo FAILED - timeout waiting for /var/lib/ai-dev-box/ready; exit 1" : null
 }
 
 ###############################################################################
@@ -100,10 +95,10 @@ output "ssh_config_snippet" {
 
 output "ssh_config_install_command" {
   description = "Idempotently install the SSH config block into ~/.ssh/config (removes any previous block first)."
-  value       = local.have_ip ? "sed -i.bak '/^# BEGIN akamai-ai-dev-box$/,/^# END akamai-ai-dev-box$/d' ~/.ssh/config 2>/dev/null; rm -f ~/.ssh/config.bak; printf '${replace(join("\\n", local.ssh_config_lines), "$USER", "%s")}\\n' \"$USER\" >> ~/.ssh/config; chmod 600 ~/.ssh/config" : null
+  value       = local.have_ip ? "${local.ssh_config_marker_sed}; rm -f ~/.ssh/config.bak; printf '${replace(join("\\n", local.ssh_config_lines), "$USER", "%s")}\\n' \"$USER\" >> ~/.ssh/config; chmod 600 ~/.ssh/config" : null
 }
 
 output "ssh_config_remove_command" {
-  description = "Remove the managed SSH config block on destroy."
-  value       = "sed -i.bak '/^# BEGIN akamai-ai-dev-box$/,/^# END akamai-ai-dev-box$/d' ~/.ssh/config 2>/dev/null && rm -f ~/.ssh/config.bak && chmod 600 ~/.ssh/config"
+  description = "Remove the managed SSH config block, e.g. before teardown: bash -lc \"$(tofu -chdir=tofu output -raw ssh_config_remove_command)\"."
+  value       = "${local.ssh_config_marker_sed} && rm -f ~/.ssh/config.bak && chmod 600 ~/.ssh/config"
 }

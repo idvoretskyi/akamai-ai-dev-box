@@ -6,7 +6,7 @@ resource "linode_instance" "dev_box" {
   label           = local.instance
   region          = local.region
   type            = local.instance_type
-  firewall_id     = var.create_firewall ? try(linode_firewall.dev_box_fw[0].id, null) : null
+  firewall_id     = var.create_firewall ? linode_firewall.dev_box_fw[0].id : null
   tags            = var.tags
   private_ip      = var.private_ip
   backups_enabled = var.backups_enabled
@@ -20,7 +20,7 @@ resource "linode_instance" "dev_box" {
 
   lifecycle {
     precondition {
-      condition     = can(regex("^[a-z_][a-z0-9_-]{0,31}$", local.username))
+      condition     = can(regex(local.username_regex, local.username))
       error_message = "Resolved deploy username '${local.username}' is not a valid Linux username. Set TF_VAR_username or ensure your local $USER is a valid Linux username (lowercase, max 32 chars)."
     }
     precondition {
@@ -36,7 +36,7 @@ resource "linode_instance" "dev_box" {
       error_message = "Only g2-gpu-rtx4000a1-s is supported for this baseline."
     }
     precondition {
-      condition     = can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", local.hostname))
+      condition     = can(regex(local.dns_label_regex, local.hostname))
       error_message = "Resolved hostname '${local.hostname}' is not a valid lowercase DNS label (1-63 chars)."
     }
   }
@@ -64,6 +64,8 @@ resource "linode_firewall" "dev_box_fw" {
 
 # Explicit disks/config ensure the Ubuntu distribution kernel boots, not a
 # provider kernel without matching NVIDIA modules. Fresh deployments only.
+# Root disk size (MiB) = plan disk (512 GiB / 524288 MiB) minus the 1024 MiB
+# swap disk below, so the two disks exactly fill the g2-gpu-rtx4000a1-s plan.
 resource "linode_instance_disk" "root" {
   linode_id       = linode_instance.dev_box.id
   label           = "ubuntu-root"

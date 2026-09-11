@@ -7,41 +7,24 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   static:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: opentofu/setup-opentofu@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2
         with:
           tofu_version: 1.12.1
           tofu_wrapper: false
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.12'
       - name: Install static check dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-          python -m pip install -r requirements-dev.txt
-      - name: OpenTofu formatting
-        run: tofu -chdir=tofu fmt -check -recursive -diff
-      - name: OpenTofu init and validate (no backend)
-        run: |
-          tofu -chdir=tofu init -backend=false -lockfile=readonly
-          tofu -chdir=tofu validate
-      - name: Shell static checks
-        run: |
-          bash -n scripts/linode-token-from-cli.sh
-          bash -n scripts/smoke-test.sh
-          bash -n tofu/cloud-init/bootstrap.sh
-          bash -n tofu/scripts/read-linode-cli.sh
-          bash -n tofu/scripts/read-local-user.sh
-          shellcheck scripts/linode-token-from-cli.sh
-          shellcheck scripts/smoke-test.sh
-          shellcheck tofu/cloud-init/bootstrap.sh
-          shellcheck tofu/scripts/read-linode-cli.sh
-          shellcheck tofu/scripts/read-local-user.sh
-      - name: Render and schema checks
-        run: python3 tests/check_config.py
+        run: python -m pip install -r requirements-dev.txt
+      - name: Run static checks
+        run: scripts/check.sh
