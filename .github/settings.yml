@@ -16,6 +16,9 @@ repository:
   enable_automated_security_fixes: true
   enable_vulnerability_alerts: true
 
+# Requires the Settings app to be installed with permissions to manage
+# repository security and branch protection.
+
 labels:
   - name: bug
     color: d73a4a
