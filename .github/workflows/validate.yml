@@ -1,6 +1,7 @@
 name: Validate
 on:
   push:
+    branches: ["main"]
   pull_request:
   merge_group:
 
@@ -8,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
