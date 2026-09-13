@@ -13,7 +13,7 @@ Routine in-scope file edits, formatting, and static checks do not need a separat
 - Paid deployment belongs on an external trusted administration host. Review a saved plan, obtain approval, and apply only that saved plan. Do not use `-auto-approve` or combine planning and applying into unattended automation.
 - Do not hardcode provider credentials or read real secrets into repository files. For operator workflows, this repo may export `LINODE_TOKEN` from local `linode-cli` config via `scripts/linode-token-from-cli.sh`; never print or commit credential values.
 - Do not add upgrade or import procedures without separate review. Explicit root/swap disks and GRUB boot configuration are required to boot the distribution kernel for NVIDIA support.
-- Preserve the two-stage reboot sequence: install `linux-generic` and `linux-headers-generic`, record `kernel-boot-id`, and reboot into the distribution kernel before driver selection; then use `ubuntu-drivers install --gpgpu`, install the matching selected NVIDIA utilities, record `driver-boot-id`, and reboot again. Both markers live under `/var/lib/ai-dev-box/`. Failures require diagnosis and a manual service restart, not an automatic reboot loop.
+- Preserve the two-stage reboot sequence: install `linux-generic` and `linux-headers-generic`, record `kernel-boot-id`, and reboot into the distribution kernel before driver selection; then identify the recommended package via `ubuntu-drivers list --gpgpu --recommended`, install that exact package plus matching NVIDIA utilities, record `driver-boot-id`, and reboot again. Both markers live under `/var/lib/ai-dev-box/`. Failures require diagnosis and a manual service restart, not an automatic reboot loop.
 - Do not widen SSH allowlists, expose Ollama on public port 11434, enable paid backups, add local Kubernetes, or install a CUDA toolkit or GPU Docker runtime as incidental fixes.
 
 ## Data And Trust
@@ -26,24 +26,13 @@ Routine in-scope file edits, formatting, and static checks do not need a separat
 
 ## Verification And Handoff
 
-Run static verification with direct commands:
+Run static verification with the single-sourced check script (also used by CI and `CONTRIBUTING.md`):
 
 ```bash
-tofu -chdir=tofu fmt -check -recursive -diff
-tofu -chdir=tofu init -backend=false -lockfile=readonly
-tofu -chdir=tofu validate
-bash -n scripts/linode-token-from-cli.sh
-bash -n scripts/smoke-test.sh
-bash -n tofu/cloud-init/bootstrap.sh
-bash -n tofu/scripts/read-linode-cli.sh
-bash -n tofu/scripts/read-local-user.sh
-shellcheck scripts/linode-token-from-cli.sh
-shellcheck scripts/smoke-test.sh
-shellcheck tofu/cloud-init/bootstrap.sh
-shellcheck tofu/scripts/read-linode-cli.sh
-shellcheck tofu/scripts/read-local-user.sh
-python tests/check_config.py
+scripts/check.sh
 ```
+
+This runs `tofu fmt`/`init`/`validate`, `bash -n` + `shellcheck` on all shell scripts, and `tests/check_config.py`.
 
 Do not run root bootstrap scripts on a workstation. Runtime `scripts/smoke-test.sh` checks belong on a separately approved deployed server; a model test also requires an explicitly downloaded and created model.
 

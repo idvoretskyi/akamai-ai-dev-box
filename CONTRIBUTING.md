@@ -10,29 +10,12 @@ Use OpenTofu >= 1.10 and the repository's pinned Linode provider lock file. Inst
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-dev.txt
-tofu -chdir=tofu fmt -check -recursive -diff
-tofu -chdir=tofu init -backend=false -lockfile=readonly
-tofu -chdir=tofu validate
-bash -n scripts/linode-token-from-cli.sh
-bash -n scripts/smoke-test.sh
-bash -n tofu/cloud-init/bootstrap.sh
-bash -n tofu/scripts/read-linode-cli.sh
-bash -n tofu/scripts/read-local-user.sh
-shellcheck scripts/linode-token-from-cli.sh
-shellcheck scripts/smoke-test.sh
-shellcheck tofu/cloud-init/bootstrap.sh
-shellcheck tofu/scripts/read-linode-cli.sh
-shellcheck tofu/scripts/read-local-user.sh
-python tests/check_config.py
+scripts/check.sh
 ```
 
-These are static checks. They must not need cloud credentials, provision resources, download model weights, or call paid inference APIs. Dependency installation and provider initialization may require network access. Preserve the provider lock file; normal initialization uses:
+`scripts/check.sh` is the single source for the static check list (also used by CI); read it directly if you want to run an individual step. These are static checks. They must not need cloud credentials, provision resources, download model weights, or call paid inference APIs. Dependency installation and provider initialization may require network access. Preserve the provider lock file; normal initialization uses `tofu -chdir=tofu init -backend=false -lockfile=readonly` (no backend) for static checks.
 
-```bash
-tofu -chdir=tofu init -lockfile=readonly
-```
-
-For real deployments, this repo expects remote state in Linode Object Storage via `tofu/backend.hcl` (from `tofu/backend.hcl.example`) and local shell exports for credentials: `LINODE_TOKEN` from `scripts/linode-token-from-cli.sh` plus Object Storage S3 credentials.
+For real deployments, this repo expects remote state in Linode Object Storage via `tofu/backend.hcl` (from `tofu/backend.hcl.example`) and local shell exports for credentials: `LINODE_TOKEN` from `scripts/linode-token-from-cli.sh` plus Object Storage S3 credentials. Use `tofu -chdir=tofu init -backend-config=backend.hcl -lockfile=readonly` for that case; add `-reconfigure` only when deliberately changing backend configuration, and `-migrate-state` when moving existing state.
 
 Do not run bootstrap scripts as root on your workstation. Server-side smoke checks require a separately approved deployment; report them separately from static results. Model quality and tool-use claims need reproducible runtime evidence, not just passing JSON validation.
 
@@ -40,7 +23,7 @@ Do not run bootstrap scripts as root on your workstation. Server-side smoke chec
 
 - Keep the minimal default installation and narrow SSH access intact. No paid CI, paid backups, local Kubernetes, CUDA toolkit, or GPU container runtime by default.
 - Add or adjust tests for behavior changes, and update the relevant documentation and examples together.
-- Check upstream release assets and SHA256 values for binary pin changes. Record the source and validation performed in the pull request. Keep NVIDIA selection hardware-aware through `ubuntu-drivers install --gpgpu`; do not pin a driver branch or freeze Ubuntu package and security revisions.
+- Check upstream release assets and SHA256 values for binary pin changes. Record the source and validation performed in the pull request. Keep NVIDIA selection hardware-aware: install the exact package identified by `ubuntu-drivers list --gpgpu --recommended`; do not pin a driver branch or freeze Ubuntu package and security revisions.
 - Preserve the distribution-kernel reboot before compute-driver installation and the second reboot before GPU validation. Cover stage markers and failure handling without automatic reboot loops. Readiness requires working `nvidia-smi`, a loaded driver version >= 550, and the actual loaded version recorded in the journal before Ollama is enabled.
 - Validate OpenCode fields against the [published schema](https://opencode.ai/config.json) and verify behavior with the pinned OpenCode release when possible. Preserve the warning about merged configuration and restart requirements.
 - Use placeholders only. Never include real state, tfvars, saved plans, credentials, private keys, or unredacted logs. Review the diff and staged files, even when ignore rules exist.

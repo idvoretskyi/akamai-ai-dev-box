@@ -15,14 +15,14 @@ variable "region" {
 }
 
 variable "instance_type" {
-  description = "Akamai (Linode) instance plan. Optional - inherits from ~/.config/linode-cli, then falls back to g2-gpu-rtx4000a1-s."
+  description = "Akamai (Linode) instance plan. Optional - inherits from ~/.config/linode-cli, then falls back to g2-gpu-rtx4000a1-s. This baseline supports g2-gpu-rtx4000a1-s only."
   type        = string
   default     = null
   nullable    = true
 
   validation {
-    condition     = var.instance_type == null || can(regex("^g[0-9]+-", var.instance_type))
-    error_message = "Instance type must be a valid Linode plan slug."
+    condition     = var.instance_type == null || var.instance_type == "g2-gpu-rtx4000a1-s"
+    error_message = "This baseline supports instance_type g2-gpu-rtx4000a1-s only."
   }
 }
 

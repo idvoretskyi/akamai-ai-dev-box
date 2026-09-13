@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Emit a LINODE_TOKEN value from local linode-cli configuration.
 # Usage:
-#   export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"
-#   export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh profile-name)"
+#   LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"; export LINODE_TOKEN
+#   LINODE_TOKEN="$(scripts/linode-token-from-cli.sh profile-name)"; export LINODE_TOKEN
 
 set -euo pipefail
 

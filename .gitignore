@@ -2,11 +2,9 @@
 *.tfstate
 *.tfstate.*
 *.tfplan
-terraform.tfvars
 *.tfvars
 !tofu/terraform.tfvars.example
 backend.hcl
-*.auto.tfvars
 *.tfvars.json
 override.tf
 override.tf.json
@@ -20,6 +18,6 @@ crash.*.log
 .venv/
 __pycache__/
 *.pyc
-kubeconfig
 *.pem
 *.key
+*.sarif

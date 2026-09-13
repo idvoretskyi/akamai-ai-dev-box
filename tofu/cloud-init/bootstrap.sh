@@ -15,7 +15,7 @@ source /etc/ai-dev-box.env
 state=/var/lib/ai-dev-box
 install -d -m 0700 "$state"
 exec 9>"$state/bootstrap.lock"
-flock -n 9 || exit 0
+flock -n 9 || { echo "Another bootstrap run is already in progress; exiting without retrying." >&2; exit 1; }
 trap 'echo "Bootstrap failed at line $LINENO. Inspect the journal before retrying." >&2' ERR
 boot_id=$(cat /proc/sys/kernel/random/boot_id)
 
@@ -30,7 +30,8 @@ if [[ ! -f "$state/kernel-boot-id" ]]; then
 fi
 if [[ $(cat "$state/kernel-boot-id") == "$boot_id" ]]; then
   echo "Waiting for the scheduled kernel reboot; no further reboot scheduled." >&2
-  exit 1
+  logger -t ai-dev-box "waiting_for_kernel_reboot=1"
+  exit 0
 fi
 [[ $(uname -r) == *-generic ]] || {
   echo "Not running the distribution generic kernel. Check the GRUB boot profile." >&2
@@ -45,10 +46,13 @@ if [[ ! -f "$state/driver-boot-id" ]]; then
     echo "Unable to identify a recommended NVIDIA driver package." >&2
     exit 1
   }
-  ubuntu-drivers install --gpgpu
+  # Install the exact listed package rather than re-running ubuntu-drivers'
+  # own selection logic, so the driver actually installed can never disagree
+  # with the driver identified above.
+  apt-get install -y "$selected_driver"
   # Ensure userspace utilities match the selected driver family when available.
-  selected_driver=${selected_driver%-open}
-  utils_package=${selected_driver/nvidia-driver-/nvidia-utils-}
+  utils_package=${selected_driver%-open}
+  utils_package=${utils_package/nvidia-driver-/nvidia-utils-}
   if apt-cache show "$utils_package" >/dev/null 2>&1; then
     apt-get install -y "$utils_package"
   else
@@ -63,7 +67,8 @@ if [[ ! -f "$state/driver-boot-id" ]]; then
 fi
 if [[ $(cat "$state/driver-boot-id") == "$boot_id" ]]; then
   echo "Waiting for the scheduled NVIDIA reboot; no further reboot scheduled." >&2
-  exit 1
+  logger -t ai-dev-box "waiting_for_driver_reboot=1"
+  exit 0
 fi
 
 modprobe nvidia_uvm

@@ -12,6 +12,12 @@ locals {
 
   image_pattern = "^linode/ubuntu26\\.04$"
 
+  # Shared with tofu/main.tf preconditions. Variable-level `validation` blocks
+  # cannot reference locals (Terraform restricts them to the variable itself),
+  # so the same patterns are also inlined in tofu/variables.tf.
+  dns_label_regex = "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+  username_regex  = "^[a-z_][a-z0-9_-]{0,31}$"
+
   username = coalesce(var.username, data.external.local_user.result.username)
   instance = coalesce(var.instance_label, "${local.username}-ai-dev-box")
   hostname = var.hostname == "" ? local.instance : var.hostname
@@ -39,6 +45,13 @@ locals {
 
   ipv4    = try(linode_instance.dev_box.ip_address, "")
   have_ip = local.ipv4 != ""
+
+  # Shared SSH options for the non-interactive operational-helper outputs.
+  ssh_batch_opts = "-o BatchMode=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 -o StrictHostKeyChecking=accept-new"
+
+  # Shared sed expression that deletes a previously installed managed block
+  # from ~/.ssh/config; used by both install and remove helper outputs.
+  ssh_config_marker_sed = "sed -i.bak '/^# BEGIN akamai-ai-dev-box$/,/^# END akamai-ai-dev-box$/d' ~/.ssh/config 2>/dev/null"
 
   ssh_config_lines = [
     "# BEGIN akamai-ai-dev-box",

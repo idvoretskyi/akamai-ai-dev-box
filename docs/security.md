@@ -19,7 +19,7 @@ The host needs outbound access for package and binary installation, explicit mod
 ## Credentials And State
 
 - No workstation SSH private keys, GitHub credentials, Copilot tokens, cloud credentials, or user OpenCode configuration are copied by bootstrap.
-- Keep OpenTofu and provider credentials on an external trusted administration host. Use `export LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"` in the active shell, and do not place that token on the GPU host.
+- Keep OpenTofu and provider credentials on an external trusted administration host. Run `LINODE_TOKEN="$(scripts/linode-token-from-cli.sh)"; export LINODE_TOKEN` in the active shell, and do not place that token on the GPU host.
 - Remote state in Linode Object Storage uses separate S3 credentials (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`). Scope and rotate them independently from the Linode API token.
 - The required `root_pass` is sensitive but can still be stored in state and saved plans. Treat state, plans, real tfvars, cloud-init data, crash logs, and backups as confidential.
 - Encryption and access control are required for sensitive storage even if the repository or state bucket is private. OpenTofu `sensitive` and `.gitignore` are not encryption or access controls.
@@ -46,7 +46,7 @@ No example is automatically copied to `~/.config/opencode/`. Restart OpenCode af
 
 Ollama and OpenCode release binaries are version-pinned and checked against recorded upstream SHA256 values before installation. Review the provenance of those values: a checksum fetched from the same compromised publisher is not independent authenticity evidence. Do not bypass verification on download failure.
 
-Ubuntu 26.04 (`linode/ubuntu26.04`) supplies `linux-generic`, `linux-headers-generic`, and the hardware-aware current compute driver selected by `ubuntu-drivers install --gpgpu`, with matching NVIDIA utilities. No NVIDIA branch is pinned; package and security revisions follow apt. This bleeding-edge baseline can differ between fresh installations and remains subject to GPU compatibility. Package availability is not a live GPU trial or a guarantee that every future package revision is compatible.
+Ubuntu 26.04 (`linode/ubuntu26.04`) supplies `linux-generic`, `linux-headers-generic`, and the hardware-aware current compute driver selected via `ubuntu-drivers list --gpgpu --recommended` (installed as the exact listed package), with matching NVIDIA utilities. No NVIDIA branch is pinned; package and security revisions follow apt. This bleeding-edge baseline can differ between fresh installations and remains subject to GPU compatibility. Package availability is not a live GPU trial or a guarantee that every future package revision is compatible.
 
 Bootstrap reboots into the distribution kernel before driver selection, then reboots again after driver installation. Separate `kernel-boot-id` and `driver-boot-id` markers under `/var/lib/ai-dev-box/` track those stages. Before enabling Ollama, bootstrap requires working `nvidia-smi` and a loaded driver version >= 550, and records the actual loaded driver in the readiness journal. Failures stop for diagnosis and manual service restart, not an infinite reboot loop. Do not bypass those checks or remove markers as a recovery shortcut.
 
