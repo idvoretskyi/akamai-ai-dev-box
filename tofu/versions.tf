@@ -6,7 +6,7 @@ terraform {
   required_providers {
     linode = {
       source  = "registry.opentofu.org/linode/linode"
-      version = "4.5.0"
+      version = "4.9.0"
     }
     external = {
       source  = "registry.opentofu.org/hashicorp/external"
